@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { Hero } from '../models/hero'
 import { asyncMiddleware } from '../tools'
+import Sequelize from 'sequelize'
 
 
 const heroes = Router()
@@ -9,41 +10,30 @@ const heroes = Router()
 const objectIdFilter = "[0-9,a-f,-]*"
 
 // GET all heroes
-heroes.get('/', async (req, res) => {
-  try {
-    const heroesList = await Hero.findAll({ attributes: ['id', 'name'] })
-    //console.log(`heroes '${heroesList}'`)
-    res.json({
-      status: 'success',
-      result: heroesList
-    })
-  } catch (error) {
-    res.status(400).json({
-      status: 'failure',
-      message: error.message
-    })
-  }
-})
+heroes.get('/', asyncMiddleware(async (req, res) => {
+  const heroesList = await Hero.findAll({ attributes: ['id', 'name'] })
+  //console.log(`heroes '${heroesList}'`)
+  res.json({
+    status: 'success',
+    result: heroesList
+  })
+}))
 
-heroes.get('/search/:term', async (req, res) => {
-  try {
-    const searchList = await Hero.find({
-      name: new RegExp(req.params.term, 'i')
-    })
-    res.json({
-      status: 'success',
-      result: searchList
-    })
-  } catch (error) {
-    res.status(400).json({
-      status: 'failure',
-      message: error.message
-    })
-  }
-})
+const Op = Sequelize.Op
+
+heroes.get('/search/:term', asyncMiddleware(async (req, res) => {
+  const searchList = await Hero.findAll({
+    where: { name: { [Op.like]: `%${req.params.term}%` } },
+    attributes: ['id', 'name']
+  })
+  res.json({
+    status: 'success',
+    result: searchList
+  })
+}))
 
 // GET: get one hero by its ID
-heroes.get(`/:heroId(${objectIdFilter})`, async (req, res) => {
+heroes.get(`/:heroId(${objectIdFilter})`, asyncMiddleware(async (req, res) => {
   const hero = await Hero.findOne({
     where: { id: req.params.heroId },
     attributes: ['id', 'name']
@@ -52,44 +42,35 @@ heroes.get(`/:heroId(${objectIdFilter})`, async (req, res) => {
     status: 'success',
     result: hero
   })
-})
+}))
 
 // POST: add new hero
-heroes.post('/', async (req, res) => {
-  try {
-    const hero = await Hero.create(req.body)
-    res.status(201).json({
-      status: 'success',
-      result: hero
-    })
-  } catch(error) {
-    res.status(400).json({
-      status: 'failure',
-      message: error.message
-    })
-  }
-})
+heroes.post('/', asyncMiddleware(async (req, res) => {
+  const hero = await Hero.create(req.body)
+  res.status(201).json({
+    status: 'success',
+    result: hero
+  })
+}))
 
 // PUT: update an existing hero by ID
-heroes.put(`/:heroId(${objectIdFilter})`, async (req, res) => {
-  try {
-    const hero = await Hero.findOneAndUpdate({ _id: req.params.heroId }, req.body, { new: true })
-    res.json({
-      status: 'success',
-      result: hero
-    })
-  } catch(error) {
-    res.status(400).json({
-      status: 'failure',
-      message: error.message
-    })
-  }
-})
+heroes.put(`/:heroId(${objectIdFilter})`, asyncMiddleware(async (req, res) => {
+  const [count, ] = await Hero.update(req.body, { where: { id: req.params.heroId } })
+  if (count !== 1) throw new Error('Update: Item does not exist')
+  const hero = await Hero.findOne({
+    where: { id: req.params.heroId },
+    attributes: ['id', 'name']
+  })
+  res.json({
+    status: 'success',
+    result: hero
+  })
+}))
 
 // DELETE: remove an existing hero by ID
 heroes.delete(`/:heroId(${objectIdFilter})`, asyncMiddleware(async (req, res) => {
-  const hero = await Hero.findOneAndRemove({ _id: req.params.heroId })
-  if (hero === null) throw new Error('Item does not exist')
+  const count = await Hero.destroy({ where: { id: req.params.heroId } })
+  if (count !== 1) throw new Error('Delete: Item does not exist')
   res.status(204).json()
 }))
 
