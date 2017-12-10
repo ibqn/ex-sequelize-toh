@@ -1,5 +1,5 @@
 import Sequelize from 'sequelize'
-import db from '../db'
+import { sequelize as db } from '../db'
 
 
 export const Hero = db.define('hero', {
@@ -28,19 +28,12 @@ export const Hero = db.define('hero', {
   tableName: 'hero'
 })
 
-const syncHero = async () => {
-  try {
-    await Hero.sync()
-    let all = await Hero.findAll({ attributes: ['id', 'name'] })
-    //console.log(all)
-  } catch(error) {
-    console.log(`failed to create hero table: '${error}`)
-    exit(2)
-  }
-  finally {
-    console.log('table is in sync')
-  }
+async function syncHero() {
+  await Hero.sync()
+  //throw new Error('foo')
+  //const all = await Hero.findAll({ attributes: ['id', 'name'] })
+  //console.log(all)
+  console.log('table is in sync')
 }
 
-syncHero()
-
+syncHero().catch(error => console.error(`Failed to create hero table: ${error.stack}`))

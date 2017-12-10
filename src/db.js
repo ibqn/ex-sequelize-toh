@@ -1,9 +1,8 @@
 import Sequelize from 'sequelize'
 import path from 'path'
-//import config from './config.json'
 
 
-const sequelize = new Sequelize('heroes', null, null, {
+export const sequelize = new Sequelize('heroes', null, null, {
   host: 'localhost',
   dialect: 'sqlite',
 
@@ -16,23 +15,13 @@ const sequelize = new Sequelize('heroes', null, null, {
 
   operatorsAliases: false,
   logging: console.log,
+  //logging: false,
 
-  storage: path.join(__dirname, 'heroes.sqlite')
+  storage: path.join(path.dirname(path.dirname(__filename)), 'heroes.sqlite')
 
 })
 
-
-const initDb = async () => {
-  try {
-    await sequelize.authenticate()
-  } catch(error){
-    console.log(`connection error:''${error}`)
-    exit(1)
-  } finally {
-    console.log('successfully connected to the database')
-  }
+export const initDb = async () => {
+  await sequelize.authenticate()
+  console.log('successfully connected to the database')
 }
-
-initDb()
-
-export default sequelize

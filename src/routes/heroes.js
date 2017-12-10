@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { Hero } from '../models/hero'
+import { asyncMiddleware } from '../tools'
 
 
 const heroes = Router()
@@ -86,17 +87,10 @@ heroes.put(`/:heroId(${objectIdFilter})`, async (req, res) => {
 })
 
 // DELETE: remove an existing hero by ID
-heroes.delete(`/:heroId(${objectIdFilter})`, async (req, res) => {
-  try {
-    const hero = await Hero.findOneAndRemove({ _id: req.params.heroId })
-    if (hero === null) throw new Error('Item does not exist')
-    res.status(204).json()
-  } catch(error) {
-    res.status(400).json({
-      status: 'failure',
-      message: error.message
-    })
-  }
-})
+heroes.delete(`/:heroId(${objectIdFilter})`, asyncMiddleware(async (req, res) => {
+  const hero = await Hero.findOneAndRemove({ _id: req.params.heroId })
+  if (hero === null) throw new Error('Item does not exist')
+  res.status(204).json()
+}))
 
 export default heroes
