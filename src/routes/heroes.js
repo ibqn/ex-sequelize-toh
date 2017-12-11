@@ -38,6 +38,7 @@ heroes.get(`/:heroId(${objectIdFilter})`, asyncMiddleware(async (req, res) => {
     where: { id: req.params.heroId },
     attributes: ['id', 'name']
   })
+  if (hero === null) throw new Error('Get: Item does not exist')
   res.json({
     status: 'success',
     result: hero
